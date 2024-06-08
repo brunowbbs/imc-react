@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function App() {
   const [peso, setPeso] = useState("");
@@ -9,6 +9,25 @@ export default function App() {
   const [imc, setImc] = useState(0);
   const [classificacao, setClassificacao] = useState("");
   const [cor, setCor] = useState("#95a5a6");
+
+  // [
+  //    {
+  //       imc:22,
+  //       classificacao:'Normal'
+  //       cor:'#000'
+  //    }
+  //  ]
+
+  const [historico, setHistorico] = useState([]);
+
+  useEffect(() => {
+    const imcsStringLocalStorate = localStorage.getItem("@imcs");
+
+    if (imcsStringLocalStorate) {
+      const imcs = JSON.parse(imcsStringLocalStorate);
+      setHistorico(imcs);
+    }
+  }, []);
 
   function calcularIMC() {
     if (!peso || peso < 0) {
@@ -25,11 +44,35 @@ export default function App() {
       setClassificacao(CLASSIFICACAO);
       setCor(COR);
       setImc(IMC);
+
+      setHistorico([
+        ...historico,
+        { imc: IMC, classificacao: CLASSIFICACAO, cor: COR },
+      ]);
+
+      localStorage.setItem(
+        "@imcs",
+        JSON.stringify([
+          ...historico,
+          { imc: IMC, classificacao: CLASSIFICACAO, cor: COR },
+        ])
+      );
     } else {
       alert("Informe todos os dados corretamente para o cálculo");
     }
 
     setErroPeso("");
+    setAltura("");
+    setPeso("");
+  }
+
+  function removerDoHistorico(indiceASerRemovido) {
+    const historicoFiltrado = historico.filter(
+      (item, indice) => indiceASerRemovido !== indice
+    );
+
+    setHistorico(historicoFiltrado);
+    localStorage.setItem("@imcs", JSON.stringify(historicoFiltrado));
   }
 
   function gerarClassificacao(imcResultante) {
@@ -60,7 +103,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ background: cor, height: "100vh" }}>
+    <div style={{ height: "100vh" }}>
       <h1>Calculadora IMC</h1>
 
       <div style={{ display: "flex" }}>
@@ -85,11 +128,39 @@ export default function App() {
       </div>
 
       {imc && imc > 0 ? (
-        <div>
+        <div style={{ background: cor }}>
           <h2>IMC: {imc.toFixed(2)}</h2>
           <h2>CLASSIFICAÇÃO: {classificacao}</h2>
         </div>
       ) : null}
+
+      <h3>Histórico</h3>
+      <div>
+        {historico.map((item, indice) => {
+          return (
+            <div
+              style={{
+                padding: "0px 20px",
+                borderBottom: "1px solid #000",
+                background: item.cor,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <p>
+                {item.imc} - {item.classificacao}
+              </p>
+              <button
+                style={{ height: 25 }}
+                onClick={() => removerDoHistorico(indice)}
+              >
+                Excluir
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
